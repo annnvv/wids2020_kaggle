@@ -1,6 +1,9 @@
-## data
+## data folder
 /raw_data/
 /clean_data/
+
+## submissions folder
+/submissions/
 
 # History files
 .Rhistory
