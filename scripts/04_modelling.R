@@ -3,6 +3,10 @@
   rm(list = ls())
   library(caret)
   library(rpart)
+  library(rpart.plot)
+  library(randomForest)
+  library(parallel)
+  library(doParallel)
   
   proj_path <- "C:/Users/Anna V/Documents/GitHub/wids2020_kaggle"
   
@@ -11,7 +15,7 @@
   
   test_all <- read.csv(paste0(proj_path, "/clean_data/test_cleaned.csv"), stringsAsFactors = FALSE)
   str(test_all[0:10])  
-
+  
   # create raw_train/test identifier
   train_all$cat <- "train"
   test_all$cat <- "test"
@@ -39,20 +43,17 @@
   index <- createDataPartition(train_all$hosp_death, p=0.5, list = FALSE)
   train <- train_all[index,]
   val <- train_all[-index,]
-
-  rm(train_all, index)  
   
-  # Decision Trees
-  library(rpart)
-  library(rpart.plot)
+  rm(train_all, index)  
   
   form <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
                             paste0((names(train)[3:length(train)]), collapse = " + ")))
   
+  # Decision Trees
   fit <- rpart(form, method = "class", data = train, cp = 0.01)
   rpart.plot(fit, shadow.col="gray", nn = TRUE)
   result.opt <- as.data.frame(printcp(fit))
-
+  
   train_val <- function(model){
     dt_predTrain <- predict(model, train, type = "class")
     # Checking classification accuracy
@@ -93,4 +94,33 @@
   
   rm(cp.opt.num, cp.opt, fit.opt)
   
-  
+  # #### RANDOM FOREST
+  # form_rf <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
+  #                              paste0((names(train)[c(4:8, 10:length(train))]), collapse = " + ")))
+  # # Run Random Forest
+  # mc <- makeCluster(detectCores()-1)
+  # registerDoParallel(mc)
+  # set.seed(14441)
+  # # fit.rf <-  randomForest(form_rf, data = train)
+  # fit.rf <- caret::train(form_rf, data = train, method = "rf", 
+  #                        preProc = c("scale", "center"), importance = TRUE)
+  # stopCluster(mc)
+  # 
+  # # Warning message:
+  # #   In train.default(x, y, weights = w, ...) :
+  # #   You are trying to do regression and your outcome only has two possible values Are you trying to do classification? If so, use a 2 level factor as your outcome column.
+  # # Check OOB error
+  # fit.rf
+  # # Check tree decay
+  # plot(fit.rf)
+  # 
+  # train_val(fit.rf)
+  # 
+  # # Tune random forest
+  # fit.tune <- tuneRF(train[ ,c(-1, -2)], train$hosp_death, ntreeTry = 250, 
+  #                    mtryStart = 1, stepFactor = 2, 
+  #                    improve = 0.001, trace = TRUE, plot = TRUE)
+  # fit.tune
+  # tune.param <- fit.tune[fit.tune[, 2] == min(fit.tune[, 2]), 1]
+  # 
+  # fit.rf.tuned <-  randomForest(form_rf, data = train, mytry = tune.param)
