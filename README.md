@@ -7,7 +7,8 @@ According to Women in Data Science (WiDS): "The challenge is to create a model t
 <b>Workflow</b>:
 1. EDA for train data
 2. Cleaning train and test data
-3. Modeling:
+3. Feature selecton using least absolute shrinkage and selection operator (LASSO)
+4. Modeling:
 
 * Logistic Regression
 * CART Decision Tree
@@ -18,9 +19,9 @@ According to Women in Data Science (WiDS): "The challenge is to create a model t
 * Naive Bayes
 * Neural net (if time allows)
 
-4. Simple Vote Ensemble Modeling
+5. Simple Vote Ensemble Modeling
 
-5. Heterogenous Ensemble Modeling:
+6. Heterogenous Ensemble Modeling:
 * Random Forest
 * XGBoost
 * Support Vector Machine (SVM) Radial
