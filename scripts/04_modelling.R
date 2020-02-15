@@ -44,16 +44,12 @@
   train <- train_all[index,]
   val <- train_all[-index,]
   
-  rm(train_all, index)  
+  rm(index)
   
   form <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
                             paste0((names(train)[3:length(train)]), collapse = " + ")))
   
-  # Decision Trees
-  fit <- rpart(form, method = "class", data = train, cp = 0.01)
-  rpart.plot(fit, shadow.col="gray", nn = TRUE)
-  result.opt <- as.data.frame(printcp(fit))
-  
+  #### functions #### 
   train_val <- function(model){
     dt_predTrain <- predict(model, train, type = "class")
     # Checking classification accuracy
@@ -63,10 +59,6 @@
     # Checking classification accuracy - out of sample
     print(prop.table(table(dt_predVal, val$hosp_death))*100)  
   }
-  
-  train_val(fit)
-  
-  dt_predTest <- predict(fit, test_all, type = "prob")
   
   submission_func <- function(pred_obj, file_name){
     # Purpose: a function to create a submission for the kaggle competition
@@ -80,19 +72,57 @@
     write.csv(submission_dt, paste0(proj_path, "/submissions/", file_name), row.names = FALSE)  
   }
   
-  submission_func(dt_predTest[,2], "decision_tree_submission_baseline2b_20200201.csv")  
+  #### Linear Regression #### 
+  lmFit <- train(form, data = train_all, method = "lm")
+  
+  train_val(lmFit)
+  
+  lm_predTest <- predict(lmFit, test_all, type = "prob")
+  
+  submission_func(lm_predTest[,2], "linear_reg_submission_baseline_20200215.csv")  
+  # rm(lmFit, lm_predTest)
   
   
-  cp.opt.num <- which.min(abs(result.opt$CP - (result.opt[which.min(result.opt[,4]), 4] + result.opt[which.min(result.opt[,4]), 5])))
-  cp.opt <- result.opt[cp.opt.num,1]
+  #### Decision Trees ####
+  dfFit <- rpart(form, method = "class", data = train_all, cp = 0.01)
+  rpart.plot(dfFit, shadow.col="gray", nn = TRUE)
+  result.opt <- as.data.frame(printcp(dfFit))
   
-  fit.opt <- rpart(form, method = "class", data = train, cp = cp.opt)
-  rpart.plot(fit.opt, shadow.col="gray", nn = TRUE)
-  printcp(fit.opt)
+  train_val(dfFit)
   
-  train_val(fit.opt)
+  dt_predTest <- predict(dfFit, test_all, type = "prob")
   
-  rm(cp.opt.num, cp.opt, fit.opt)
+  submission_func(dt_predTest[,2], "decision_tree_submission_baseline2c_20200215.csv")  
+  
+  rm(result.opt, dfFit, dt_predTest)
+  
+  #### KNN ####
+  set.seed(14441)
+  ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
+  knnFit <- train(form, data = train_all, method = "knn", 
+                  trControl = ctrl, preProcess = c("center","scale"), tuneLength = 11)
+  
+  knnFit
+  
+  plot(knnFit)
+  
+  
+  #### Support Vector Machine (SVM) Radial #### 
+  
+  
+  #### Random Forest ####
+  
+  
+  # cp.opt.num <- which.min(abs(result.opt$CP - (result.opt[which.min(result.opt[,4]), 4] + result.opt[which.min(result.opt[,4]), 5])))
+  # cp.opt <- result.opt[cp.opt.num,1]
+  # 
+  # fit.opt <- rpart(form, method = "class", data = train, cp = cp.opt)
+  # rpart.plot(fit.opt, shadow.col="gray", nn = TRUE)
+  # printcp(fit.opt)
+  # 
+  # train_val(fit.opt)
+  # 
+  # rm(cp.opt.num, cp.opt, fit.opt)
   
   # #### RANDOM FOREST
   # form_rf <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
