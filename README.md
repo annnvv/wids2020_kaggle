@@ -10,12 +10,13 @@ According to Women in Data Science (WiDS): "The challenge is to create a model t
 3. Modeling:
 
 * Logistic Regression
-* Decision Tree (CART)
+* CART Decision Tree
 * K Nearest Neighbors (KNN)
 * Support Vector Machine (SVM) Radial
 * Random Forest
 * XGBoost
 * Naive Bayes
+* Neural net (if time allows)
 
 4. Simple Vote Ensemble Modeling
 
