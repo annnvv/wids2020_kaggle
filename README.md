@@ -7,7 +7,7 @@ According to Women in Data Science (WiDS): "The challenge is to create a model t
 <b>Workflow</b>:
 1. EDA for train data
 2. Cleaning train and test data
-3. Feature selecton using least absolute shrinkage and selection operator (LASSO)
+3. Feature selection using least absolute shrinkage and selection operator (LASSO)
 4. Modeling:
 
 * Logistic Regression
