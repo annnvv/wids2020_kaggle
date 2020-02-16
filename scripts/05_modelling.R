@@ -10,10 +10,10 @@
   
   proj_path <- "C:/Users/Anna V/Documents/GitHub/wids2020_kaggle"
   
-  train_all <- read.csv(paste0(proj_path, "/clean_data/train_cleaned.csv"), stringsAsFactors = FALSE)
+  train_all <- read.csv(paste0(proj_path, "/clean_data/train_cleaned_sub.csv"), stringsAsFactors = FALSE)
   str(train_all[0:10])
   
-  test_all <- read.csv(paste0(proj_path, "/clean_data/test_cleaned.csv"), stringsAsFactors = FALSE)
+  test_all <- read.csv(paste0(proj_path, "/clean_data/test_cleaned_sub.csv"), stringsAsFactors = FALSE)
   str(test_all[0:10])  
   
   # create raw_train/test identifier
@@ -27,7 +27,7 @@
   # change hostpital_id and icu_id to factors
   both$hosp_id <- as.factor(both$hosp_id)
   both$icu_id <- as.factor(both$icu_id)
-  both$gender <- as.factor(both$gender)
+  # both$gender <- as.factor(both$gender)
   str(both[0:10])
   
   train_all <- both[both$cat == "train", ]
@@ -48,7 +48,7 @@
   form <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
                             paste0((names(train)[3:length(train)]), collapse = " + ")))
   
-  #### functions #### 
+  #### functions ----
   caret_train <- function(model_method, tune_len, trainCntrl = NA) {
     fit <- train(form, data = train_all, method = model_method,
                  trControl = trainCntrl, preProcess = c("center","scale"),
@@ -78,7 +78,7 @@
     write.csv(submission_dt, paste0(proj_path, "/submissions/", file_name), row.names = FALSE)  
   }
   
-  # #### Linear Regression #### 
+  # #### Linear Regression ----
   # # lmFit <- train(form, data = train_all, method = "lm")
   # lmFit <- lm(formula = form, data = train_all)
   # summary(lmFit)
@@ -90,7 +90,7 @@
   # submission_func(lm_predTest[,2], "linear_reg_submission_baseline_20200215.csv")  
   # # rm(lmFit, lm_predTest)
   
-  #### Logistic Regression ####
+  #### Logistic Regression ----
   glmFit <- glm(form, data = train_all, family = "binomial")
   summary(glmFit)
   train_val(glmFit)
@@ -99,7 +99,7 @@
   
   submission_func(glm_predTest[,2], "logit_submission_baseline_20200215.csv")  
   
-  #### Decision Trees ####
+  #### Decision Trees ----
   dfFit <- rpart(form, method = "class", data = train_all, cp = 0.01)
   rpart.plot(dfFit, shadow.col="gray", nn = TRUE)
   result.opt <- as.data.frame(printcp(dfFit))
@@ -108,11 +108,11 @@
   
   dt_predTest <- predict(dfFit, test_all, type = "prob")
   
-  submission_func(dt_predTest[,2], "decision_tree_submission_baseline2c_20200215.csv")  
+  submission_func(dt_predTest[,2], "decision_tree_submission_subset_20200215.csv")  
   
   rm(result.opt, dfFit, dt_predTest)
   
-  #### KNN ####
+  #### KNN ----
   set.seed(14441)
   ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
   
@@ -121,9 +121,13 @@
   knnFit
   plot(knnFit)
   
+  train_val(knnFit)
   
+  knn_predTest <- predict(knnFit, test_all, type = "prob")
   
-  #### Support Vector Machine (SVM) Radial #### 
+  submission_func(knn_predTest[,2], "knn_submission_subset_20200215.csv")  
+  
+  #### Support Vector Machine (SVM) Radial ####  ----
   mc <- makeCluster(detectCores()-1)
   registerDoParallel(mc)
   set.seed(14441)
@@ -134,16 +138,16 @@
   
   stopCluster(mc)
   
-  #### Random Forest ####
+  #### Random Forest ----
   
   
-  #### Naive Bayes ####
+  #### Naive Bayes ----
   
   
-  #### XGBoost ####
+  #### XGBoost ---- 
   
   
-  #### Neural Net ####
+  #### Neural Net ----
   
   # cp.opt.num <- which.min(abs(result.opt$CP - (result.opt[which.min(result.opt[,4]), 4] + result.opt[which.min(result.opt[,4]), 5])))
   # cp.opt <- result.opt[cp.opt.num,1]
