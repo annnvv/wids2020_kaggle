@@ -41,6 +41,7 @@
   x <- model.matrix( ~ -1 + ., train_all[ ,c(3:length(train_all))])
   
   #### LASSO Feature Selection ####
+  set.seed(14441)
   fit <- cv.glmnet(x, as.factor(train_all$hosp_death), 
                 family = "binomial", alpha=1, folds = 5, measure = "auc")
   plot(fit)
@@ -52,11 +53,11 @@
   inds <- which(c!=0)
   variables <- row.names(c)[inds]
   `%ni%` <- Negate(`%in%`)
-  variables <-variables[variables %ni% '(Intercept)']
+  variables <- variables[variables %ni% '(Intercept)']
   
   variables <- variables[!grepl("^hosp_id", variables)]
   variables <- variables[!grepl("^icu_id", variables)]
-  variables <- c("hosp_id", "icu_id", variables)  
+  variables <- c("encounter_id", "hosp_death", "hosp_id", "icu_id", variables)  
 
   variables  
   rm(c, inds)
