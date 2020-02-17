@@ -7,14 +7,17 @@
   library(randomForest)
   library(parallel)
   library(doParallel)
+  library(beepr)
   
   proj_path <- "C:/Users/Anna V/Documents/GitHub/wids2020_kaggle"
   
-  train_all <- read.csv(paste0(proj_path, "/clean_data/train_cleaned_sub.csv"), stringsAsFactors = FALSE)
-  str(train_all[0:10])
+  # train_all_sub <- read.csv(paste0(proj_path, "/clean_data/train_cleaned_sub.csv"), stringsAsFactors = FALSE)
+  train_all <- read.csv(paste0(proj_path, "/clean_data/train_cleaned.csv"), stringsAsFactors = FALSE)
+   str(train_all[0:10])
   
-  test_all <- read.csv(paste0(proj_path, "/clean_data/test_cleaned_sub.csv"), stringsAsFactors = FALSE)
-  str(test_all[0:10])  
+  # test_all_sub <- read.csv(paste0(proj_path, "/clean_data/test_cleaned_sub.csv"), stringsAsFactors = FALSE)
+  test_all <- read.csv(paste0(proj_path, "/clean_data/test_cleaned.csv"), stringsAsFactors = FALSE)
+    str(test_all[0:10])  
   
   # create raw_train/test identifier
   train_all$cat <- "train"
@@ -47,6 +50,9 @@
   
   form <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
                             paste0((names(train)[3:length(train)]), collapse = " + ")))
+  
+  no_cats <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
+                              paste0((names(train)[5:length(train)]), collapse = " + ")))
   
   #### functions ----
   caret_train <- function(model_method, tune_len, trainCntrl = NA) {
@@ -101,6 +107,7 @@
   
   #### Decision Trees ----
   dfFit <- rpart(form, method = "class", data = train_all, cp = 0.01)
+  beep()
   rpart.plot(dfFit, shadow.col="gray", nn = TRUE)
   result.opt <- as.data.frame(printcp(dfFit))
   
@@ -116,7 +123,7 @@
   set.seed(14441)
   ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
   
-  knnFit <- caret_train("knn", 11, ctrl)
+  knnFit <- caret_train("knn", 5, ctrl)
   # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
   knnFit
   plot(knnFit)
