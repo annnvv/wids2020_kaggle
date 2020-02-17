@@ -13,11 +13,11 @@
   
   # train_all_sub <- read.csv(paste0(proj_path, "/clean_data/train_cleaned_sub.csv"), stringsAsFactors = FALSE)
   train_all <- read.csv(paste0(proj_path, "/clean_data/train_cleaned.csv"), stringsAsFactors = FALSE)
-   str(train_all[0:10])
+  str(train_all[0:10])
   
   # test_all_sub <- read.csv(paste0(proj_path, "/clean_data/test_cleaned_sub.csv"), stringsAsFactors = FALSE)
   test_all <- read.csv(paste0(proj_path, "/clean_data/test_cleaned.csv"), stringsAsFactors = FALSE)
-    str(test_all[0:10])  
+  str(test_all[0:10])  
   
   # create raw_train/test identifier
   train_all$cat <- "train"
@@ -28,6 +28,7 @@
   rm(train_all, test_all)
   
   # change hostpital_id and icu_id to factors
+  both$hosp_death <- as.factor(both$hosp_death)
   both$hosp_id <- as.factor(both$hosp_id)
   both$icu_id <- as.factor(both$icu_id)
   # both$gender <- as.factor(both$gender)
@@ -52,7 +53,7 @@
                             paste0((names(train)[3:length(train)]), collapse = " + ")))
   
   no_cats <- as.formula(paste0(paste((names(train)[2]), collapse = " + "), "~", 
-                              paste0((names(train)[5:length(train)]), collapse = " + ")))
+                               paste0((names(train)[c(4:8, 10:length(train))]), collapse = " + ")))
   
   #### functions ----
   caret_train <- function(model_method, tune_len, trainCntrl = NA) {
@@ -83,27 +84,34 @@
     submission_dt$hospital_death <- as.numeric(as.character(submission_dt$hospital_death))
     write.csv(submission_dt, paste0(proj_path, "/submissions/", file_name), row.names = FALSE)  
   }
-  
+  train_all2 <- train_all
+  train_all2$hosp_death <- as.numeric(as.character(train_all2$hosp_death))
   # #### Linear Regression ----
-  # # lmFit <- train(form, data = train_all, method = "lm")
-  # lmFit <- lm(formula = form, data = train_all)
-  # summary(lmFit)
-  # 
-  # train_val(lmFit)
-  # 
-  # lm_predTest <- predict(lmFit, test_all, type = "prob")
-  # 
-  # submission_func(lm_predTest[,2], "linear_reg_submission_baseline_20200215.csv")  
-  # # rm(lmFit, lm_predTest)
+  # lmFit <- train(no_cats, data = train_all[, c(2,5:length(train_all))],method = "lm")
+  lmFit <- lm(no_cats, data = train_all2[, c(2,4:8,10:length(train_all2))],)
+  summary(lmFit)
+
+  train_val(lmFit)
+
+  lm_predTest <- predict(lmFit, test_all, type = "response")
+
+  submission_func(lm_predTest, "linear_reg_submission_baseline_20200216.csv")
+  lm_predTest_bound <- lm_predTest
+  lm_predTest_bound[lm_predTest_bound<0] <- 0
+  lm_predTest_bound[lm_predTest_bound>1] <- 1
+  submission_func(lm_predTest_bound, "linear_reg_submission_bound_20200217.csv")
+  
+  # rm(lmFit, lm_predTest)
   
   #### Logistic Regression ----
-  glmFit <- glm(form, data = train_all, family = "binomial")
+  glmFit <- glm(no_cats, data = train_all[, c(2,4:8, 10:length(train_all))],  
+                method = "glm.fit", family = "binomial")
   summary(glmFit)
   train_val(glmFit)
   
-  glm_predTest <- predict(glmFit, test_all, type = "prob")
+  glm_predTest <- stats::predict(glmFit, test_all, type = "response")
   
-  submission_func(glm_predTest[,2], "logit_submission_baseline_20200215.csv")  
+  submission_func(glm_predTest, "logit_submission_baseline_20200216.csv")  #kaggle auc: 0.88346
   
   #### Decision Trees ----
   dfFit <- rpart(form, method = "class", data = train_all, cp = 0.01)
@@ -116,15 +124,24 @@
   dt_predTest <- predict(dfFit, test_all, type = "prob")
   
   submission_func(dt_predTest[,2], "decision_tree_submission_subset_20200215.csv")  
+  ## "decision_tree_submission_baseline2c_20200215.csv" #kaggle auc: 0.70422
   
   rm(result.opt, dfFit, dt_predTest)
   
-  #### KNN ----
-  set.seed(14441)
   ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
   
-  knnFit <- caret_train("knn", 5, ctrl)
+  #### KNN ----
+  # set.seed(14441)
+  # knnFit <- caret_train("knn", 5, ctrl)
   # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
+  
+  ks <- as.data.frame(seq(from=3, to=9, by=2))
+  names(ks) <- "k"
+  # ks2 <- expand.grid(3:9)
+  
+  knn <- train(no_cats, data = train_all, method = "knn", 
+               metric = "auc", tuneGrid = ks)
+  
   knnFit
   plot(knnFit)
   
