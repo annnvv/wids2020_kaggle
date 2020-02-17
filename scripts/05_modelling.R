@@ -63,12 +63,12 @@
                  importance = TRUE)
   }
   
-  train_val <- function(model){
-    dt_predTrain <- predict(model, train, type = "class")
+  train_val <- function(model, type){
+    dt_predTrain <- predict(model, train, type = type)
     # Checking classification accuracy
     print(prop.table(table(dt_predTrain, train$hosp_death))*100)
     
-    dt_predVal <- predict(model, val, type = "class")
+    dt_predVal <- predict(model, val, type = type)
     # Checking classification accuracy - out of sample
     print(prop.table(table(dt_predVal, val$hosp_death))*100)  
   }
@@ -84,22 +84,23 @@
     submission_dt$hospital_death <- as.numeric(as.character(submission_dt$hospital_death))
     write.csv(submission_dt, paste0(proj_path, "/submissions/", file_name), row.names = FALSE)  
   }
+  
   train_all2 <- train_all
   train_all2$hosp_death <- as.numeric(as.character(train_all2$hosp_death))
+  
   # #### Linear Regression ----
-  # lmFit <- train(no_cats, data = train_all[, c(2,5:length(train_all))],method = "lm")
   lmFit <- lm(no_cats, data = train_all2[, c(2,4:8,10:length(train_all2))],)
   summary(lmFit)
-
-  train_val(lmFit)
-
+  
   lm_predTest <- predict(lmFit, test_all, type = "response")
-
-  submission_func(lm_predTest, "linear_reg_submission_baseline_20200216.csv")
-  lm_predTest_bound <- lm_predTest
-  lm_predTest_bound[lm_predTest_bound<0] <- 0
-  lm_predTest_bound[lm_predTest_bound>1] <- 1
-  submission_func(lm_predTest_bound, "linear_reg_submission_bound_20200217.csv")
+  
+  submission_func(lm_predTest, "linear_reg_submission_baseline_20200216.csv") #kaggle auc: 0.87360
+  # lm_predTest_bound <- lm_predTest
+  # lm_predTest_bound[lm_predTest_bound<0] <- 0
+  # lm_predTest_bound[lm_predTest_bound>1] <- 1
+  # submission_func(lm_predTest_bound, "linear_reg_submission_bound_20200217.csv") #kaggle auc:0.87340
+  
+  saveRDS(lmFit, paste0(proj_path, "/models/linear_reg_submission_baseline_20200216.RDS"))
   
   # rm(lmFit, lm_predTest)
   
@@ -107,11 +108,11 @@
   glmFit <- glm(no_cats, data = train_all[, c(2,4:8, 10:length(train_all))],  
                 method = "glm.fit", family = "binomial")
   summary(glmFit)
-  train_val(glmFit)
-  
+
   glm_predTest <- stats::predict(glmFit, test_all, type = "response")
   
   submission_func(glm_predTest, "logit_submission_baseline_20200216.csv")  #kaggle auc: 0.88346
+  saveRDS(glmFit, paste0(proj_path, "/models/logit_submission_baseline_20200216.RDS"))
   
   #### Decision Trees ----
   dfFit <- rpart(form, method = "class", data = train_all, cp = 0.01)
@@ -119,29 +120,25 @@
   rpart.plot(dfFit, shadow.col="gray", nn = TRUE)
   result.opt <- as.data.frame(printcp(dfFit))
   
-  train_val(dfFit)
+  train_val(dfFit, type = "class")
   
   dt_predTest <- predict(dfFit, test_all, type = "prob")
   
-  submission_func(dt_predTest[,2], "decision_tree_submission_subset_20200215.csv")  
+  submission_func(dt_predTest[,2], "decision_tree_submission_baseline2c_20200215.csv")  
   ## "decision_tree_submission_baseline2c_20200215.csv" #kaggle auc: 0.70422
+  saveRDS(dfFit, paste0(proj_path, "/models/decision_tree_submission_baseline2c_20200215.RDS"))
   
   rm(result.opt, dfFit, dt_predTest)
   
-  ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
+  #ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
   
   #### KNN ----
   # set.seed(14441)
   # knnFit <- caret_train("knn", 5, ctrl)
   # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
   
-  ks <- as.data.frame(seq(from=3, to=9, by=2))
-  names(ks) <- "k"
-  # ks2 <- expand.grid(3:9)
-  
   knn <- train(no_cats, data = train_all, method = "knn", 
-               metric = "auc", tuneGrid = ks)
-  
+               metric = "auc", tuneGrid = data.frame(k=c(3,5,7)))
   knnFit
   plot(knnFit)
   
@@ -149,7 +146,8 @@
   
   knn_predTest <- predict(knnFit, test_all, type = "prob")
   
-  submission_func(knn_predTest[,2], "knn_submission_subset_20200215.csv")  
+  submission_func(knn_predTest[,2], "knn_submission_subset_20200217.csv")  
+  saveRDS(knn, paste0(proj_path, "/models/knn_submission_subset_20200217.RDS"))
   
   #### Support Vector Machine (SVM) Radial ####  ----
   mc <- makeCluster(detectCores()-1)
