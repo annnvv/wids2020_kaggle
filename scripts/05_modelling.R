@@ -108,7 +108,7 @@
   glmFit <- glm(no_cats, data = train_all[, c(2,4:8, 10:length(train_all))],  
                 method = "glm.fit", family = "binomial")
   summary(glmFit)
-
+  
   glm_predTest <- stats::predict(glmFit, test_all, type = "response")
   
   submission_func(glm_predTest, "logit_submission_baseline_20200216.csv")  #kaggle auc: 0.88346
@@ -136,9 +136,14 @@
   # set.seed(14441)
   # knnFit <- caret_train("knn", 5, ctrl)
   # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
-  
+  mc <- makeCluster(detectCores()-1)
+  registerDoParallel(mc)
+  set.seed(14441)
   knn <- train(no_cats, data = train_all, method = "knn", 
-               metric = "auc", tuneGrid = data.frame(k=c(3,5,7)))
+               metric = "auc", tuneGrid = data.frame(k=1))
+  
+  stopCluster(mc)
+  
   knnFit
   plot(knnFit)
   
@@ -150,6 +155,18 @@
   saveRDS(knn, paste0(proj_path, "/models/knn_submission_subset_20200217.RDS"))
   
   #### Support Vector Machine (SVM) Radial ####  ----
+  library(e1071)
+  mc <- makeCluster(detectCores()-1)
+  registerDoParallel(mc)
+  set.seed(14441)
+  
+  svmRFit <- svm(no_cats, data = train_all, kernel = "linear", 
+                 scale = FALSE, probability = TRUE)
+  stopCluster(mc)
+  
+  plot(svmRFit, train_all)
+  
+  #### Random Forest ----
   mc <- makeCluster(detectCores()-1)
   registerDoParallel(mc)
   set.seed(14441)
@@ -160,16 +177,22 @@
   
   stopCluster(mc)
   
-  #### Random Forest ----
-  
-  
   #### Naive Bayes ----
-  
+  set.seed(14441)
+  nbFit <- train(no_cat, data = train_all, method = "nb")
   
   #### XGBoost ---- 
-  
+  set.seed(14441)
+  xgbFit <- train(no_cat, data = train_all, method = "xgboost")
   
   #### Neural Net ----
+  set.seed(14441)
+  nnetFit <- train(no_cat, data = train_all, method = "nnet")
+  
+  
+  
+  
+  #### misc work ---
   
   # cp.opt.num <- which.min(abs(result.opt$CP - (result.opt[which.min(result.opt[,4]), 4] + result.opt[which.min(result.opt[,4]), 5])))
   # cp.opt <- result.opt[cp.opt.num,1]
