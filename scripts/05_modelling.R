@@ -5,6 +5,7 @@
   library(rpart)
   library(rpart.plot)
   library(randomForest)
+  library(e1071)
   library(parallel)
   library(doParallel)
   library(beepr)
@@ -133,20 +134,14 @@
   #ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
   
   #### KNN ----
-  # set.seed(14441)
   # knnFit <- caret_train("knn", 5, ctrl)
   # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
-  mc <- makeCluster(detectCores()-1)
-  registerDoParallel(mc)
-  set.seed(14441)
+
   knn <- train(no_cats, data = train_all, method = "knn", 
                metric = "auc", tuneGrid = data.frame(k=1))
   
-  stopCluster(mc)
-  
   knnFit
   plot(knnFit)
-  
   train_val(knnFit)
   
   knn_predTest <- predict(knnFit, test_all, type = "prob")
@@ -155,18 +150,20 @@
   saveRDS(knn, paste0(proj_path, "/models/knn_submission_subset_20200217.RDS"))
   
   #### Support Vector Machine (SVM) Radial ####  ----
-  library(e1071)
-  mc <- makeCluster(detectCores()-1)
-  registerDoParallel(mc)
-  set.seed(14441)
-  
-  svmRFit <- svm(no_cats, data = train_all, kernel = "linear", 
+  svmRFit <- svm(no_cats, data = train_all, kernel = "radial", 
                  scale = FALSE, probability = TRUE)
-  stopCluster(mc)
+  train_val(svmRFit)
   
-  plot(svmRFit, train_all)
+  svmR_predTest <- predict(svmRFit, test_all[, c(4:8, 10:length(test_all))], type = "class")
+  svmR_predTest2 <- predict(svmRFit, test_all[, c(4:8, 10:length(test_all))], type = "prob")
+  svmR_predTest3 <- predict(svmRFit, test_all[, c(4:8, 10:length(test_all))])
+                            
+  submission_func(svmR_predTest2, "svmR_submission_20200219.csv")  
+  saveRDS(svmRFit, paste0(proj_path, "/models/svmR_submission_20200219.RDS"))
   
-  #### Random Forest ----
+  # plot(svmRFit, train_all, no_cats)
+  
+  #### Random Forest ---- 
   mc <- makeCluster(detectCores()-1)
   registerDoParallel(mc)
   set.seed(14441)
@@ -181,9 +178,19 @@
   set.seed(14441)
   nbFit <- train(no_cat, data = train_all, method = "nb")
   
+  nb_predTest <- predict(svmRFit, test_all, type = "prob")
+  
+  submission_func(nb_predTest[,2], "nb_submission_20200219.csv")  
+  saveRDS(nbFit, paste0(proj_path, "/models/nb_submission_20200219.RDS"))
+  
   #### XGBoost ---- 
   set.seed(14441)
   xgbFit <- train(no_cat, data = train_all, method = "xgboost")
+  
+  xgb_predTest <- predict(xgbFit, test_all, type = "prob")
+  
+  submission_func(xgb_predTest[,2], "xgboost_submission_20200219.csv")  
+  saveRDS(knn, paste0(proj_path, "/models/nb_submission_20200219.RDS"))
   
   #### Neural Net ----
   set.seed(14441)
