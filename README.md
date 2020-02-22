@@ -17,9 +17,8 @@ According to Women in Data Science (WiDS): "The challenge is to create a model t
 * Random Forest
 * XGBoost
 * Naive Bayes
-* Neural net (if time allows)
 
-5. Simple Vote Ensemble Modeling
+5. Simple Average Ensemble Modeling
 
 6. Heterogenous Ensemble Modeling:
 * Random Forest
