@@ -196,7 +196,14 @@
   saveRDS(rfFit500, paste0(proj_path, "/models/ranger_500_submission_20200221.RDS"))
   rf500_test_predTest <- predict(rfFit500, test_all)
   View(rf500_test_predTest$predictions)
-  submission_func(rf500_test_predTest$predictions[,2], "ranger_500_submission_20200221.csv")  #kaggle auc:0.88480
+  submission_func(rf500_test_predTest$predictions[,2], "ranger_500_submission_20200221.csv")  #kaggle auc:0.88632
+  
+  rfFit1000 <- ranger(no_cats, data = train_all, num.trees = 1000, probability = TRUE,  
+                     seed = 14441, num.threads = threads) 
+  saveRDS(rfFit1000, paste0(proj_path, "/models/ranger_1000_submission_20200221.RDS"))
+  rf1000_test_predTest <- predict(rfFit1000, test_all)
+  View(rf1000_test_predTest$predictions)
+  submission_func(rf1000_test_predTest$predictions[,2], "ranger_1000_submission_20200221.csv")  #kaggle auc:0.88714
   
   #### Naive Bayes ----
   set.seed(14441)
