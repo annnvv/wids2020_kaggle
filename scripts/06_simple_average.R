@@ -44,6 +44,7 @@
   all_pred  <- merge(all_pred, dt_pred, by = "encounter_id")
   all_pred  <- merge(all_pred, knn_pred, by = "encounter_id")
   rm(xgb_pred, rf_pred, logit_pred, lm_pred, nb_pred, dt_pred, knn_pred)
+  write.csv(all_pred, paste0(proj_path, "/models/test_all_preds.csv"), row.names = FALSE)
 
   all_pred$average_all <- rowMeans(all_pred[ ,c(2:8)], na.rm=TRUE)
   sa_v1 <- all_pred[, c(1,9)]
