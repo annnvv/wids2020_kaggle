@@ -114,8 +114,8 @@
   #drop this factor variable because it doesn't exist in the test set!
   raw_train <- raw_train[ , -which(names(raw_train) %in% c("hosp_admit_src_observation"))]
   
-  #remove death probability rates from data
-  raw_train <- raw_train[ , -which(names(raw_train) %in% c("apache_4a_hosp_death_prob", "apache_4a_icu_death_prob" ))]
+  # #remove death probability rates from data
+  # raw_train <- raw_train[ , -which(names(raw_train) %in% c("apache_4a_hosp_death_prob", "apache_4a_icu_death_prob" ))]
   
   write.csv(raw_train, paste0(proj_path, "/clean_data/train_cleaned.csv"), row.names = FALSE)
 

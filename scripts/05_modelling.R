@@ -32,7 +32,7 @@
   both$hosp_death <- as.factor(both$hosp_death)
   both$hosp_id <- as.factor(both$hosp_id)
   both$icu_id <- as.factor(both$icu_id)
-  # both$gender <- as.factor(both$gender)
+  both$gender <- as.factor(both$gender)
   str(both[0:10])
   
   train_all <- both[both$cat == "train", ]
@@ -95,13 +95,13 @@
   
   lm_predTest <- predict(lmFit, test_all, type = "response")
   
-  submission_func(lm_predTest, "linear_reg_submission_baseline_20200216.csv") #kaggle auc: 0.87360
+  submission_func(lm_predTest, "linear_reg_submission_baseline_20200222.csv") #kaggle auc: 0.87171
   # lm_predTest_bound <- lm_predTest
   # lm_predTest_bound[lm_predTest_bound<0] <- 0
   # lm_predTest_bound[lm_predTest_bound>1] <- 1
   # submission_func(lm_predTest_bound, "linear_reg_submission_bound_20200217.csv") #kaggle auc:0.87340
   
-  saveRDS(lmFit, paste0(proj_path, "/models/linear_reg_submission_baseline_20200216.RDS"))
+  saveRDS(lmFit, paste0(proj_path, "/models/linear_reg_submission_baseline_20200222.RDS"))
   
   # rm(lmFit, lm_predTest)
   
@@ -112,8 +112,8 @@
   
   glm_predTest <- stats::predict(glmFit, test_all, type = "response")
   
-  submission_func(glm_predTest, "logit_submission_baseline_20200216.csv")  #kaggle auc: 0.88346
-  saveRDS(glmFit, paste0(proj_path, "/models/logit_submission_baseline_20200216.RDS"))
+  submission_func(glm_predTest, "logit_submission_baseline_20200222.csv")  #kaggle auc: 0.88355
+  saveRDS(glmFit, paste0(proj_path, "/models/logit_submission_baseline_20200222.RDS"))
   
   #### Decision Trees ----
   dfFit <- rpart(form, method = "class", data = train_all, cp = 0.01)
@@ -125,28 +125,27 @@
   
   dt_predTest <- predict(dfFit, test_all, type = "prob")
   
-  submission_func(dt_predTest[,2], "decision_tree_submission_baseline2c_20200215.csv")  
-  ## "decision_tree_submission_baseline2c_20200215.csv" #kaggle auc: 0.70422
-  saveRDS(dfFit, paste0(proj_path, "/models/decision_tree_submission_baseline2c_20200215.RDS"))
+  submission_func(dt_predTest[,2], "decision_tree_submission_baseline_20200222.csv") #kaggle auc: 0.71434 
+  saveRDS(dfFit, paste0(proj_path, "/models/decision_tree_submission_baseline_20200222.RDS"))
   
   rm(result.opt, dfFit, dt_predTest)
   
   #ctrl <- trainControl(method="repeatedcv", repeats = 3) #classProbs=TRUE, summaryFunction = twoClassSummary
   
-  #### KNN ----
-  # knnFit <- caret_train("knn", 5, ctrl)
-  # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
-
-  knn <- train(no_cats, data = train_all, method = "knn", 
-               metric = "accuracy", tuneGrid = data.frame(k=1))
-  saveRDS(knn, paste0(proj_path, "/models/knn1_submission_20200219.RDS"))
-  
-  knn
-  train_val(knn, type= "raw")
-  
-  knn_predTest <- predict(knn, test_all, type = "prob")
-  
-  submission_func(knn_predTest[,2], "knn1_submission_20200219.csv") #kaggle auc: 0.56314
+  # #### KNN ----
+  # # knnFit <- caret_train("knn", 5, ctrl)
+  # # knnFit <- train(form, data = train_all, method = "knn", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 11)
+  # 
+  # knn <- train(no_cats, data = train_all, method = "knn", 
+  #              metric = "accuracy", tuneGrid = data.frame(k=1))
+  # saveRDS(knn, paste0(proj_path, "/models/knn1_submission_20200219.RDS"))
+  # 
+  # knn
+  # train_val(knn, type= "raw")
+  # 
+  # knn_predTest <- predict(knn, test_all, type = "prob")
+  # 
+  # submission_func(knn_predTest[,2], "knn1_submission_20200219.csv") #kaggle auc: 0.56314
   
   #### Support Vector Machine (SVM) Radial ####  ----
   svmRFit <- svm(no_cats, data = train_all, kernel = "radial", 
@@ -169,69 +168,69 @@
   #Ranger is a fast implementation of random forests (Breiman 2001) or recursive partitioning, particularly suited for high dimensional data
   #https://arxiv.org/pdf/1508.04409.pdf
   threads <-  detectCores()-1
-  rfFit <- ranger(no_cats, data = train_all, num.trees = 3, probability = TRUE,  
-                 seed = 14441, num.threads = threads) #classification = TRUE
-  saveRDS(rfFit, paste0(proj_path, "/models/ranger_test_20200221.RDS"))
-  rf_test_predTest <- predict(rfFit, test_all)
-  View(rf_test_predTest$predictions)
-  submission_func(rf_test_predTest$predictions[,2], "range_test_20200221.csv")  #kaggle auc: 0.77093
-  
-  rfFit <- ranger(no_cats, data = train_all, num.trees = 50, probability = TRUE,  
-                  seed = 14441, num.threads = threads) 
-  saveRDS(rfFit, paste0(proj_path, "/models/ranger_submission_20200221.RDS"))
-  rf_test_predTest <- predict(rfFit, test_all)
-  View(rf_test_predTest$predictions)
-  submission_func(rf_test_predTest$predictions[,2], "ranger_submission_20200221.csv")  #kaggle auc:0.87902
-  
-  
-  rfFit200 <- ranger(no_cats, data = train_all, num.trees = 200, probability = TRUE,  
-                  seed = 14441, num.threads = threads) 
-  saveRDS(rfFit200, paste0(proj_path, "/models/ranger_200_submission_20200221.RDS"))
-  rf200_test_predTest <- predict(rfFit200, test_all)
-  View(rf200_test_predTest$predictions)
-  submission_func(rf200_test_predTest$predictions[,2], "ranger_200_submission_20200221.csv")  #kaggle auc:0.88480
-  
-  rfFit500 <- ranger(no_cats, data = train_all, num.trees = 500, probability = TRUE,  
-                     seed = 14441, num.threads = threads) 
-  saveRDS(rfFit500, paste0(proj_path, "/models/ranger_500_submission_20200221.RDS"))
-  rf500_test_predTest <- predict(rfFit500, test_all)
-  View(rf500_test_predTest$predictions)
-  submission_func(rf500_test_predTest$predictions[,2], "ranger_500_submission_20200221.csv")  #kaggle auc:0.88632
+  # rfFit <- ranger(no_cats, data = train_all, num.trees = 3, probability = TRUE,  
+  #                seed = 14441, num.threads = threads) #classification = TRUE
+  # saveRDS(rfFit, paste0(proj_path, "/models/ranger_test_20200221.RDS"))
+  # rf_test_predTest <- predict(rfFit, test_all)
+  # View(rf_test_predTest$predictions)
+  # submission_func(rf_test_predTest$predictions[,2], "range_test_20200221.csv")  #kaggle auc: 0.77093
+  # 
+  # rfFit <- ranger(no_cats, data = train_all, num.trees = 50, probability = TRUE,  
+  #                 seed = 14441, num.threads = threads) 
+  # saveRDS(rfFit, paste0(proj_path, "/models/ranger_submission_20200221.RDS"))
+  # rf_test_predTest <- predict(rfFit, test_all)
+  # View(rf_test_predTest$predictions)
+  # submission_func(rf_test_predTest$predictions[,2], "ranger_submission_20200221.csv")  #kaggle auc:0.87902
+  # rfFit200 <- ranger(no_cats, data = train_all, num.trees = 200, probability = TRUE,  
+  #                 seed = 14441, num.threads = threads) 
+  # saveRDS(rfFit200, paste0(proj_path, "/models/ranger_200_submission_20200221.RDS"))
+  # rf200_test_predTest <- predict(rfFit200, test_all)
+  # View(rf200_test_predTest$predictions)
+  # submission_func(rf200_test_predTest$predictions[,2], "ranger_200_submission_20200221.csv")  #kaggle auc:0.88480
+  # rfFit500 <- ranger(no_cats, data = train_all, num.trees = 500, probability = TRUE,  
+  #                    seed = 14441, num.threads = threads) 
+  # saveRDS(rfFit500, paste0(proj_path, "/models/ranger_500_submission_20200221.RDS"))
+  # rf500_test_predTest <- predict(rfFit500, test_all)
+  # View(rf500_test_predTest$predictions)
+  # submission_func(rf500_test_predTest$predictions[,2], "ranger_500_submission_20200221.csv")  #kaggle auc:0.88632
   
   rfFit1000 <- ranger(no_cats, data = train_all, num.trees = 1000, probability = TRUE,  
                      seed = 14441, num.threads = threads) 
-  saveRDS(rfFit1000, paste0(proj_path, "/models/ranger_1000_submission_20200221.RDS"))
+  saveRDS(rfFit1000, paste0(proj_path, "/models/ranger_1000_submission_20200222.RDS"))
   rf1000_test_predTest <- predict(rfFit1000, test_all)
   View(rf1000_test_predTest$predictions)
-  submission_func(rf1000_test_predTest$predictions[,2], "ranger_1000_submission_20200221.csv")  #kaggle auc:0.88714
+  submission_func(rf1000_test_predTest$predictions[,2], "ranger_1000_submission_20200222.csv")  #kaggle auc:0.89242
   
   #### Naive Bayes ----
   set.seed(14441)
   nbFit <- train(no_cats, data = train_all, method = "nb")
+  saveRDS(nbFit, paste0(proj_path, "/models/nb_submission_20200223.RDS")) 
   
-  nb_predTest <- predict(svmRFit, test_all, type = "prob")
+  nb_predTest <- predict(nbFit, test_all, type = "prob")
   
-  submission_func(nb_predTest[,2], "nb_submission_20200219.csv")  #kaggle auc: 0.81191
-  saveRDS(nbFit, paste0(proj_path, "/models/nb_submission_20200219.RDS")) 
+  submission_func(nb_predTest[,2], "nb_submission_20200223.csv")  #kaggle auc: 0.82686
   
   #### XGBoost ---- 
   set.seed(14441)
   xgbFit <- train(no_cats, data = train_all, method = "xgbLinear")
-  saveRDS(xgbFit, paste0(proj_path, "/models/xgboost_submission_20200219.RDS"))
+  saveRDS(xgbFit, paste0(proj_path, "/models/xgboost_submission_20200222.RDS"))
   
   xgb_predTest <- predict(xgbFit, test_all, type = "prob")
   train_val(xgbFit, type = "raw")
   
-  submission_func(xgb_predTest[,2], "xgboost_submission_20200220.csv") #kaggle auc: 0.89499
+  submission_func(xgb_predTest[,2], "xgboost_submission_20200222.csv") #kaggle auc:0.89372 
   
-  #### Neural Net ----
-  set.seed(14441)
-  nnetFit <- train(no_cats, data = train_all, method = "nnet")
-  saveRDS(nnetFit, paste0(proj_path, "/models/nnet_submission_20200219.RDS"))
-  train_val(nnetFit, type = "raw")
-  nnet_predTest <- predict(nnetFit, test_all, type = "prob")
+  #https://stackoverflow.com/questions/25097729/un-register-a-doparallel-cluster  
+  registerDoSEQ()
   
-  submission_func(nnet_predTest[,2], "nnet_submission_20200220.csv") #kaggle auc: 0.50000
+  # #### Neural Net ----
+  # set.seed(14441)
+  # nnetFit <- train(no_cats, data = train_all, method = "nnet")
+  # saveRDS(nnetFit, paste0(proj_path, "/models/nnet_submission_20200219.RDS"))
+  # train_val(nnetFit, type = "raw")
+  # nnet_predTest <- predict(nnetFit, test_all, type = "prob")
+  # 
+  # submission_func(nnet_predTest[,2], "nnet_submission_20200220.csv") #kaggle auc: 0.50000
   
   
   

@@ -119,8 +119,8 @@
   #re-order to have hosp_death as first var!
   raw_test <- raw_test[ , c(1, 3, 2, 4:length(raw_test))]
   
-  #remove death probability rates from data
-  raw_test <- raw_test[ , -which(names(raw_test) %in% c("apache_4a_hosp_death_prob", "apache_4a_icu_death_prob" ))]
+  # #remove death probability rates from data
+  # raw_test <- raw_test[ , -which(names(raw_test) %in% c("apache_4a_hosp_death_prob", "apache_4a_icu_death_prob" ))]
   
   
   raw_test2 <- raw_test[, c(1, 3:length(raw_test))]
