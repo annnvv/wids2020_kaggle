@@ -5,6 +5,7 @@
   library(ranger)
   library(doParallel)
   library(parallel)
+  library(pROC)
   library(beepr)
 
   proj_path <- "C:/Users/Anna V/Documents/GitHub/wids2020_kaggle"
@@ -48,40 +49,48 @@
   # 
   # rm(both)
   
-  ##read in models
-  xgb <- readRDS(paste0(proj_path, "/models/xgboost_submission_20200222.RDS"))
-  ranger <- readRDS(paste0(proj_path, "/models/ranger_1000_submission_20200222.RDS"))
-  logit <- readRDS(paste0(proj_path, "/models/logit_submission_baseline_20200222.RDS"))
-  lm <- readRDS(paste0(proj_path, "/models/linear_reg_submission_baseline_20200222.RDS"))
-  nb <- readRDS(paste0(proj_path, "/models/nb_submission_20200223.RDS"))
-  dt <- readRDS(paste0(proj_path, "/models/decision_tree_submission_baseline_20200222.RDS"))
-  # knn1 <- readRDS(paste0(proj_path, "/models/knn1_submission_20200219.RDS"))   
-  train_preds <- c()
-  train_preds$encounter_id <- train_all$encounter_id
-    train_preds$hospital_death <- train_all$hosp_death
-  train_preds <- as.data.frame(train_preds)
-  
-  xgb_pred <- predict(xgb, train_all, type = "prob")
-    train_preds$xgb_pred <- xgb_pred[,2]
-  ranger_pred <- predict(ranger, train_all)
-    train_preds$rf_pred <- ranger_pred$predictions[,2]
-  logit_pred <- predict(logit, train_all, type = "response")
-    train_preds$logit_pred <- logit_pred
-  lm_pred <- predict(lm, train_all, type = "response")
-    train_preds$lm_pred <- lm_pred
-    train_preds$lm_pred[train_preds$lm_pred<0] <- 0
-    train_preds$lm_pred[train_preds$lm_pred>1] <- 1
-  nb_pred <- predict(nb, train_all, type = "prob")
-    train_preds$nb_pred <- nb_pred[, 2]
-  dt_pred <- predict(dt, train_all, type = "prob")
-    train_preds$dt_pred <- dt_pred[ , 2]
-  write.csv(train_preds, paste0(proj_path, "/models/train_all_preds.csv"), row.names = FALSE)
-  rm(xgb_pred, ranger_pred, logit_pred, lm_pred, nb_pred, dt_pred)
-  rm(dt, lm, logit, nb, ranger, xgb)
+  # ##read in models
+  # xgb <- readRDS(paste0(proj_path, "/models/xgboost_submission_20200222.RDS"))
+  # ranger <- readRDS(paste0(proj_path, "/models/ranger_1000_submission_20200222.RDS"))
+  # logit <- readRDS(paste0(proj_path, "/models/logit_submission_baseline_20200222.RDS"))
+  # lm <- readRDS(paste0(proj_path, "/models/linear_reg_submission_baseline_20200222.RDS"))
+  # nb <- readRDS(paste0(proj_path, "/models/nb_submission_20200223.RDS"))
+  # dt <- readRDS(paste0(proj_path, "/models/decision_tree_submission_baseline_20200222.RDS"))
+  # # knn1 <- readRDS(paste0(proj_path, "/models/knn1_submission_20200219.RDS"))   
+  # train_preds <- c()
+  # train_preds$encounter_id <- train_all$encounter_id
+  #   train_preds$hospital_death <- train_all$hosp_death
+  # train_preds <- as.data.frame(train_preds)
+  # 
+  # xgb_pred <- predict(xgb, train_all, type = "prob")
+  #   train_preds$xgb_pred <- xgb_pred[,2]
+  # ranger_pred <- predict(ranger, train_all)
+  #   train_preds$rf_pred <- ranger_pred$predictions[,2]
+  # logit_pred <- predict(logit, train_all, type = "response")
+  #   train_preds$logit_pred <- logit_pred
+  # lm_pred <- predict(lm, train_all, type = "response")
+  #   train_preds$lm_pred <- lm_pred
+  #   train_preds$lm_pred[train_preds$lm_pred<0] <- 0
+  #   train_preds$lm_pred[train_preds$lm_pred>1] <- 1
+  # nb_pred <- predict(nb, train_all, type = "prob")
+  #   train_preds$nb_pred <- nb_pred[, 2]
+  # dt_pred <- predict(dt, train_all, type = "prob")
+  #   train_preds$dt_pred <- dt_pred[ , 2]
+  # write.csv(train_preds, paste0(proj_path, "/models/train_all_preds.csv"), row.names = FALSE)
+  # rm(xgb_pred, ranger_pred, logit_pred, lm_pred, nb_pred, dt_pred)
+  # rm(dt, lm, logit, nb, ranger, xgb)
   
   train_preds <- read.csv(paste0(proj_path, "/models/train_all_preds.csv"))
   names(train_preds)
   train_preds$hospital_death <- as.factor(train_preds$hospital_death)
+  
+  ### AUC calculations (didn't have time to do them earlier so performing them here)
+  auc(train_preds$hospital_death, train_preds$xgb_pred)   #auc: 0.9565
+  auc(train_preds$hospital_death, train_preds$rf_pred)    #auc: 1
+  auc(train_preds$hospital_death, train_preds$logit_pred) #auc: 0.8868
+  auc(train_preds$hospital_death, train_preds$lm_pred)    #auc: 0.8772
+  auc(train_preds$hospital_death, train_preds$nb_pred)    #auc: 0.8239
+  auc(train_preds$hospital_death, train_preds$dt_pred)    #auc: 0.6916
   
   test_preds <- read.csv(paste0(proj_path, "/models/test_all_preds.csv"))
   names(test_preds)
